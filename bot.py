@@ -1,28 +1,36 @@
+
 import telebot
 import os
 import time
 from collections import defaultdict
+from flask import Flask
+from threading import Thread
 
 TOKEN = os.environ.get("BOT_TOKEN")
 bot = telebot.TeleBot(TOKEN)
 
-# Track user messages for anti-spam
-user_messages = defaultdict(list)
+# --- Flask Web Server ---
+app = Flask('')
 
-# Banned words list
+@app.route('/')
+def home():
+    return "Velqorix Bot is Alive 🔥"
+
+def run():
+    app.run(host='0.0.0.0', port=8080)
+
+def keep_alive():
+    t = Thread(target=run)
+    t.start()
+
+# --- Security Data ---
+user_messages = defaultdict(list)
 banned_words = ["gali1", "gali2", "abuse"]
 
-# 🔹 START
 @bot.message_handler(commands=['start'])
 def start(message):
     bot.reply_to(message, "🔐 Velqorix Security Bot Activated!")
 
-# 🔹 HELP
-@bot.message_handler(commands=['help'])
-def help_command(message):
-    bot.reply_to(message, "/ban /mute /unban\nAuto link delete enabled.")
-
-# 🔹 AUTO DELETE LINKS
 @bot.message_handler(func=lambda m: True)
 def security_check(message):
     user_id = message.from_user.id
@@ -42,7 +50,7 @@ def security_check(message):
             bot.send_message(chat_id, "⚠️ Abuse is not allowed!")
             return
 
-    # Anti-Spam (5 messages in 5 seconds)
+    # Anti-Spam
     user_messages[user_id].append(time.time())
     user_messages[user_id] = [t for t in user_messages[user_id] if time.time() - t < 5]
 
@@ -50,12 +58,6 @@ def security_check(message):
         bot.restrict_chat_member(chat_id, user_id, until_date=int(time.time()) + 60)
         bot.send_message(chat_id, "🔇 User muted for spam!")
 
-# 🔹 BAN COMMAND
-@bot.message_handler(commands=['ban'])
-def ban_user(message):
-    if message.reply_to_message:
-        user_id = message.reply_to_message.from_user.id
-        bot.ban_chat_member(message.chat.id, user_id)
-        bot.send_message(message.chat.id, "🚫 User banned!")
-
-bot.infinity_polling()
+if _name_ == "_main_":
+    keep_alive()
+    bot.infinity_polling()
