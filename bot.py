@@ -58,4 +58,4 @@ def ban_user(message):
         bot.ban_chat_member(message.chat.id, user_id)
         bot.send_message(message.chat.id, "🚫 User banned!")
 
-bot.polling()
+bot.infinity_polling()
